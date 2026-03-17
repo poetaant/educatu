@@ -800,6 +800,18 @@
         <p id="modeStatus" class="text-sm text-gray-400 italic font-medium h-4">Controles desactivados en modo Automático</p>
     </div>
 
+    <!-- Modal de Bloqueo por Accesos -->
+    <div id="globalLockModal" class="fixed inset-0 bg-gray-900/95 z-[9999] hidden items-center justify-center backdrop-blur-md transition-opacity">
+        <div class="bg-white p-10 rounded-[2rem] shadow-2xl max-w-md w-full flex flex-col items-center text-center border-4 border-gray-200">
+            <div class="text-6xl mb-4">🔐</div>
+            <h2 class="text-2xl font-black text-gray-800 mb-2 uppercase tracking-wide">Acceso Bloqueado</h2>
+            <p class="text-gray-600 mb-6 font-medium">Has superado el límite de 3 visitas gratuitas. Introduce la contraseña para desbloquear el reloj para siempre.</p>
+            <input type="password" id="globalPasswordInput" class="w-full border-2 border-gray-300 rounded-xl px-4 py-3 mb-2 text-center text-xl font-bold focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100 transition-all" placeholder="Contraseña">
+            <p id="globalPasswordError" class="text-red-500 text-sm font-bold mb-4 hidden opacity-0 transition-opacity">Contraseña incorrecta</p>
+            <button onclick="unlockGlobalAccess()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-lg rounded-xl shadow-lg transition-all active:scale-95 uppercase tracking-widest">Desbloquear</button>
+        </div>
+    </div>
+
     <script>
         // Diccionario de Traducciones (I18N)
         const i18n = {
@@ -2082,6 +2094,48 @@
             setTimeout(() => { timerDisplay.classList.add('hidden'); }, 5000);
         }
 
+        // --- SISTEMA DE BLOQUEO POR ACCESOS (LOCALSTORAGE) ---
+        function checkGlobalAccess() {
+            const isUnlocked = localStorage.getItem('relojUnlocked') === 'true';
+            if (isUnlocked) return true;
+
+            let accessCount = parseInt(localStorage.getItem('relojAccessCount')) || 0;
+            accessCount++;
+            localStorage.setItem('relojAccessCount', accessCount);
+
+            if (accessCount > 3) {
+                const modal = document.getElementById('globalLockModal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                
+                // Permitir usar Enter en el input de la contraseña
+                document.getElementById('globalPasswordInput').addEventListener('keypress', function (e) {
+                    if (e.key === 'Enter') unlockGlobalAccess();
+                });
+                
+                return false;
+            }
+            return true;
+        }
+
+        function unlockGlobalAccess() {
+            const pwd = document.getElementById('globalPasswordInput').value;
+            const err = document.getElementById('globalPasswordError');
+            if (pwd === 'colegios') {
+                localStorage.setItem('relojUnlocked', 'true');
+                const modal = document.getElementById('globalLockModal');
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                err.classList.add('hidden', 'opacity-0');
+            } else {
+                err.classList.remove('hidden');
+                setTimeout(() => err.classList.remove('opacity-0'), 10);
+                document.getElementById('globalPasswordInput').value = '';
+                document.getElementById('globalPasswordInput').focus();
+            }
+        }
+
+        checkGlobalAccess();
         init();
     </script>
 </body>
